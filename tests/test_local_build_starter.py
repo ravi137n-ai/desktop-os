@@ -1,6 +1,7 @@
 """Mock the external-host controller; never install packages or launch a GUI."""
 import contextlib
 import importlib.util
+import signal
 import sys
 import unittest
 from pathlib import Path
@@ -23,11 +24,12 @@ class LocalBuildStarterTests(unittest.TestCase):
         self.addCleanup(stack.close)
         stack.enter_context(patch.object(self.module, "host_info", return_value=self.host))
         stack.enter_context(patch.object(self.module.os, "geteuid", return_value=1000))
+        self.real_run = self.module.subprocess.run
         self.run = stack.enter_context(patch.object(
             self.module.subprocess, "run", return_value=SimpleNamespace(stdout="0\n", returncode=0),
         ))
         self.confirm = stack.enter_context(patch("builtins.input", return_value="BUILD"))
-        stack.enter_context(patch("builtins.print"))
+        self.print = stack.enter_context(patch("builtins.print"))
 
     def invoke(self, flag):
         with patch.object(sys, "argv", ["prepare-local-build.py", flag]):
@@ -104,6 +106,63 @@ class LocalBuildStarterTests(unittest.TestCase):
             self.assertEqual(self.module.cli(), 130)
         commands = [call.args[0] for call in self.run.call_args_list]
         self.assertNotIn(["cubic"], commands)
+
+    def test_child_only_interrupt_preserves_status_warning_and_stops_work(self):
+        for status in (130, -signal.SIGINT):
+            for step in ("apt-get", str(ROOT / "scripts/fetch-base.py")):
+                with self.subTest(status=status, step=step):
+                    self.run.reset_mock()
+                    self.print.reset_mock()
+                    def interrupt_child(command, **kwargs):
+                        if step in command:
+                            raise self.module.subprocess.CalledProcessError(status, command)
+                        return SimpleNamespace(stdout="0\n", returncode=0)
+                    self.run.side_effect = interrupt_child
+                    with patch.object(sys, "argv", ["prepare-local-build.py", "--prepare-local-build"]):
+                        self.assertEqual(self.module.cli(), 130)
+                    commands = [call.args[0] for call in self.run.call_args_list]
+                    self.assertIn(step, commands[-1])
+                    self.assertNotIn(["cubic"], commands)
+                    warnings = [
+                        call.args[0] for call in self.print.call_args_list
+                        if call.kwargs.get("file") is sys.stderr
+                    ]
+                    self.assertEqual(len(warnings), 1)
+                    self.assertIn("preparation interrupted", warnings[0])
+                    self.assertIn("Host packages or PPA changes already made remain", warnings[0])
+                    self.assertIn("no automatic rollback", warnings[0])
+
+    def test_ordinary_child_failure_remains_an_error_not_cancellation(self):
+        def failed_download(command, **kwargs):
+            if str(ROOT / "scripts/fetch-base.py") in command:
+                raise self.module.subprocess.CalledProcessError(1, command)
+            return SimpleNamespace(stdout="0\n", returncode=0)
+        self.run.side_effect = failed_download
+        with patch.object(sys, "argv", ["prepare-local-build.py", "--prepare-local-build"]):
+            self.assertEqual(self.module.cli(), 1)
+        self.assertNotIn(["cubic"], [call.args[0] for call in self.run.call_args_list])
+        self.print.assert_any_call(
+            f"Local build preparation stopped: {self.module.subprocess.CalledProcessError(1, [sys.executable, str(ROOT / 'scripts/fetch-base.py')])}",
+            file=sys.stderr,
+        )
+
+    def test_real_child_exit_130_is_reported_as_cancellation(self):
+        def child_only_cancellation(command, **kwargs):
+            if str(ROOT / "scripts/fetch-base.py") in command:
+                return self.real_run(
+                    [sys.executable, "-c", "import sys; sys.exit(130)"],
+                    check=True, capture_output=True,
+                )
+            return SimpleNamespace(stdout="0\n", returncode=0)
+        self.run.side_effect = child_only_cancellation
+        with patch.object(sys, "argv", ["prepare-local-build.py", "--prepare-local-build"]):
+            self.assertEqual(self.module.cli(), 130)
+        self.assertNotIn(["cubic"], [call.args[0] for call in self.run.call_args_list])
+        self.assertTrue(any(
+            "no automatic rollback" in str(call.args[0])
+            for call in self.print.call_args_list
+            if call.kwargs.get("file") is sys.stderr
+        ))
 
 
 if __name__ == "__main__":
