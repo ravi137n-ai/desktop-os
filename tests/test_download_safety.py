@@ -107,6 +107,41 @@ class DownloadSafetyTests(unittest.TestCase):
         request.assert_not_called()
         self.assertEqual(self.partial.read_bytes(), b"previous unfinished download")
 
+    def test_interrupted_owned_download_is_cleaned_and_can_be_retried(self):
+        response = self.response()
+        with patch.object(response, "read", side_effect=[self.data[:5], KeyboardInterrupt()]):
+            with patch.object(self.module.urllib.request, "urlopen", return_value=response):
+                with self.assertRaises(KeyboardInterrupt):
+                    self.module.main()
+        self.assertFalse(self.partial.exists())
+        self.assertFalse(self.target.exists())
+        with patch.object(self.module.urllib.request, "urlopen", return_value=self.response()):
+            self.module.main()
+        self.assertEqual(self.target.read_bytes(), self.data)
+        self.assertFalse(self.partial.exists())
+
+    def test_interrupt_before_exclusive_creation_preserves_competing_download(self):
+        def interrupted_connection(*args, **kwargs):
+            self.partial.write_bytes(b"other process download")
+            raise KeyboardInterrupt()
+        with patch.object(self.module.urllib.request, "urlopen", side_effect=interrupted_connection):
+            with self.assertRaises(KeyboardInterrupt):
+                self.module.main()
+        self.assertEqual(self.partial.read_bytes(), b"other process download")
+        self.assertFalse(self.target.exists())
+
+    def test_interrupt_during_verification_cleans_owned_partial(self):
+        with patch.object(self.module.urllib.request, "urlopen", return_value=self.response()):
+            with patch.object(self.module, "sha256", side_effect=KeyboardInterrupt()):
+                with self.assertRaises(KeyboardInterrupt):
+                    self.module.main()
+        self.assertFalse(self.partial.exists())
+        self.assertFalse(self.target.exists())
+
+    def test_cli_interrupt_returns_130_without_traceback(self):
+        with patch.object(self.module, "main", side_effect=KeyboardInterrupt()):
+            self.assertEqual(self.module.cli(), 130)
+
 
 if __name__ == "__main__":
     unittest.main()
