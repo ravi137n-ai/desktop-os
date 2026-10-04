@@ -88,6 +88,23 @@ class LocalBuildStarterTests(unittest.TestCase):
         self.assertEqual(len(commands), 3)
         self.assertFalse(any("apt-get" in command or "apt-add-repository" in command for command in commands))
 
+    def test_cancelled_confirmation_returns_130_without_host_changes(self):
+        self.confirm.side_effect = KeyboardInterrupt()
+        with patch.object(sys, "argv", ["prepare-local-build.py", "--prepare-local-build"]):
+            self.assertEqual(self.module.cli(), 130)
+        self.run.assert_not_called()
+
+    def test_interrupted_download_prevents_cubic_launch(self):
+        def interrupt_download(command, **kwargs):
+            if str(ROOT / "scripts/fetch-base.py") in command:
+                raise KeyboardInterrupt()
+            return SimpleNamespace(stdout="0\n", returncode=0)
+        self.run.side_effect = interrupt_download
+        with patch.object(sys, "argv", ["prepare-local-build.py", "--prepare-local-build"]):
+            self.assertEqual(self.module.cli(), 130)
+        commands = [call.args[0] for call in self.run.call_args_list]
+        self.assertNotIn(["cubic"], commands)
+
 
 if __name__ == "__main__":
     unittest.main()
