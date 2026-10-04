@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Desktop OS Guide
+Comment=Read the guide for this Ubuntu-based development system
+Exec=xdg-open /usr/share/doc/desktop-os/welcome.html
+Icon=help-browser
+Terminal=false
+Categories=Utility;Documentation;
