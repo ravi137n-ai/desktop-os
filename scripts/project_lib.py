@@ -1,8 +1,11 @@
 """Shared, standard-library-only validation for the OS source setup."""
 from __future__ import annotations
 
+import ctypes
+import errno
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -74,6 +77,27 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def rename_no_replace(source: Path, destination: Path) -> None:
+    """Atomically publish a file or directory without replacing any destination.
+
+    Ubuntu supports renameat2(RENAME_NOREPLACE). Fail closed on platforms or
+    filesystems without it; a check followed by ordinary rename is not safe.
+    """
+    rename = getattr(ctypes.CDLL(None, use_errno=True), "renameat2", None)
+    if rename is None:
+        raise OSError(errno.ENOTSUP, "Atomic no-replace rename is unavailable.")
+    rename.argtypes = [
+        ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint,
+    ]
+    rename.restype = ctypes.c_int
+    if rename(-100, os.fsencode(source), -100, os.fsencode(destination), 1) != 0:
+        error = ctypes.get_errno()
+        raise OSError(
+            error, "Atomic no-replace rename failed: " + os.strerror(error),
+            str(destination),
+        )
 
 
 def validate_signature_status(status: str) -> None:
