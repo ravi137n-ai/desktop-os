@@ -116,6 +116,10 @@ release maintainer's signing process before distributing it.
 ## Important limitations
 
 - Source tools have no external Python dependencies.
+- Customization uses a target-local `flock` to prevent overlapping operations.
+  Leave the empty lock file in place; the lock itself is released on process exit.
+- Final image and candidate publication uses Linux's atomic no-replace rename.
+  Unsupported platforms/filesystems fail explicitly rather than risk overwriting.
 - Cubic adds a third-party PPA on the Ubuntu **build host**, not in the OS image.
   Review that trust decision before installing it.
 - Live-session installer overlays can hide customizations that appear in the
