@@ -1,0 +1,10 @@
+# Additions to the official desktop image. Keep its browser, installer,
+# App Center, drivers, repositories, and snap seeds intact.
+libreoffice-writer
+libreoffice-calc
+libreoffice-impress
+vlc
+gnome-text-editor
+gnome-calculator
+gnome-system-monitor
+unattended-upgrades
