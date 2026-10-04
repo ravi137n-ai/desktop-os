@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>Desktop OS</name>
+    <filename>/usr/share/backgrounds/desktop-os-wallpaper.svg</filename>
+    <options>zoom</options>
+    <pcolor>#10293e</pcolor>
+    <scolor>#246e79</scolor>
+    <shade_type>solid</shade_type>
+  </wallpaper>
+</wallpapers>
