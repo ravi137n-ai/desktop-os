@@ -29,6 +29,7 @@ ARM/Apple Silicon, and universal hardware support are not provided.
 | `overlay/` | Desktop defaults, wallpaper, launcher, local guide |
 | `scripts/check-project.py` | Non-destructive recipe validation |
 | `scripts/fetch-base.py` | Signed-metadata and image checksum verification |
+| `scripts/prepare-local-build.py` | Guarded isolated-host setup and Cubic launcher; not an ISO assembler |
 | `scripts/apply-in-cubic.sh` | Apply additions inside Cubic's chroot only |
 | `scripts/prepare-release.py` | Stage a tested local candidate, never publish |
 | `config/test-report.template.json` | Required evidence tied to an exact ISO |
@@ -54,6 +55,10 @@ download a multi-GB image, or write disks.
 workflow for the standalone OS repository. It runs the source tests and checks
 the official Ubuntu image's signed metadata on an Ubuntu runner.
 
+The workflow currently exists in this Replit source setup but is absent from
+the standalone GitHub repository because connection uploads were blocked.
+The local Ubuntu/Cubic build route does not depend on GitHub Actions.
+
 This workflow **does not build an ISO, run Cubic, boot a VM, or install the OS**.
 It is a preliminary verification step, not a completed automated image builder.
 The image-build workflow still needs implementation and execution.
@@ -64,7 +69,23 @@ Use a separate Ubuntu desktop build computer with admin rights, internet,
 roughly 40 GB free storage, and preferably 8 GB RAM or more. These are build
 recommendations, not measured minimum requirements for the resulting OS.
 
-Use Cubic's official installation instructions:
+The official Cubic guide currently warns that some privileged components may be
+exploited without a root password. Use an isolated build computer or VM rather
+than an everyday machine, and review the warning before installing the PPA.
+
+From this source folder on that Ubuntu desktop, you can use the guided starter:
+
+```sh
+python3 scripts/prepare-local-build.py --check
+python3 scripts/prepare-local-build.py --prepare-local-build
+```
+
+The starter requires explicit risk confirmation and real administrator access
+before installing host tools, verifies/downloads the official base, then opens
+Cubic. It does not complete Cubic's wizard or build/test the custom ISO for you.
+It refuses this Replit workspace even though its OS label says Ubuntu.
+
+For manual setup, use Cubic's official installation instructions:
 https://github.com/PJ-Singh-001/Cubic/wiki/Install-Cubic
 
 After installing Cubic and GnuPG there:
