@@ -4,6 +4,7 @@ import argparse
 import os
 import platform
 import shutil
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -84,13 +85,21 @@ def main():
     subprocess.run(["cubic"], cwd=ROOT, check=True)
 
 
+def interrupted_status():
+    print("Local build preparation interrupted. Host packages or PPA changes already made remain; no automatic rollback was performed. Resolve any package-manager errors before retrying.", file=sys.stderr)
+    return 128 + signal.SIGINT
+
+
 def cli():
     try:
         main()
     except KeyboardInterrupt:
-        print("Local build preparation interrupted. Host packages or PPA changes already made remain; no automatic rollback was performed. Resolve any package-manager errors before retrying.", file=sys.stderr)
-        return 130
+        return interrupted_status()
     except (ValueError, OSError, EOFError, subprocess.CalledProcessError) as error:
+        if isinstance(error, subprocess.CalledProcessError) and error.returncode in (
+            128 + signal.SIGINT, -signal.SIGINT,
+        ):
+            return interrupted_status()
         print(f"Local build preparation stopped: {error}", file=sys.stderr)
         return 1
     return 0
