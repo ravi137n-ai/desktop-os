@@ -68,7 +68,7 @@ def main():
         return
     partial = target.with_suffix(".iso.part")
     if partial.exists():
-        raise ValueError(f"Incomplete download exists: {partial}. Remove it manually before retrying.")
+        raise ValueError(f"Incomplete download exists: {partial}. First ensure no download is using it; remove only that stale file before retrying.")
     owns_partial = False
     try:
         with urllib.request.urlopen(base["release_url"] + base["filename"], timeout=120) as response, partial.open("xb") as output:
@@ -89,16 +89,24 @@ def main():
         if sha256(partial) != base["sha256"]:
             raise ValueError("Downloaded ISO failed checksum verification.")
         rename_no_replace(partial, target)
-    except Exception:
+    except (Exception, KeyboardInterrupt):
         if owns_partial:
             partial.unlink(missing_ok=True)
         raise
     print(f"Verified image: {target}")
 
 
-if __name__ == "__main__":
+def cli():
     try:
         main()
+    except KeyboardInterrupt:
+        print("Base image preparation interrupted. Any partial created by this active download was cleaned up; preexisting partials are never removed.", file=sys.stderr)
+        return 130
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"Base image preparation failed: {error}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(cli())
