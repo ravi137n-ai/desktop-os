@@ -1,0 +1,7 @@
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/desktop-os-wallpaper.svg'
+picture-uri-dark='file:///usr/share/backgrounds/desktop-os-wallpaper.svg'
+picture-options='zoom'
+
+[org.gnome.shell:ubuntu]
+favorite-apps=['ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox_firefox.desktop', 'org.gnome.Nautilus.desktop', 'libreoffice-writer.desktop', 'snap-store_snap-store.desktop', 'org.gnome.Settings.desktop', 'desktop-os-welcome.desktop']
