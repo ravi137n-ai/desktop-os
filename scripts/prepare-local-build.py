@@ -84,9 +84,17 @@ def main():
     subprocess.run(["cubic"], cwd=ROOT, check=True)
 
 
-if __name__ == "__main__":
+def cli():
     try:
         main()
+    except KeyboardInterrupt:
+        print("Local build preparation interrupted. Host packages or PPA changes already made remain; no automatic rollback was performed. Resolve any package-manager errors before retrying.", file=sys.stderr)
+        return 130
     except (ValueError, OSError, EOFError, subprocess.CalledProcessError) as error:
         print(f"Local build preparation stopped: {error}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(cli())
