@@ -48,6 +48,16 @@ python3 -m unittest discover -s tests -v
 These commands do not install packages, customize your running computer,
 download a multi-GB image, or write disks.
 
+## GitHub source verification
+
+`.github/workflows/build-os.yml` is a manually started source-verification
+workflow for the standalone OS repository. It runs the source tests and checks
+the official Ubuntu image's signed metadata on an Ubuntu runner.
+
+This workflow **does not build an ISO, run Cubic, boot a VM, or install the OS**.
+It is a preliminary verification step, not a completed automated image builder.
+The image-build workflow still needs implementation and execution.
+
 ## Build on an Ubuntu computer
 
 Use a separate Ubuntu desktop build computer with admin rights, internet,
