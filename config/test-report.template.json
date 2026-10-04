@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "tested_iso_sha256": "",
+  "checks": {
+    "uefi_live_boot": {"status": "pending", "evidence": ""},
+    "vm_installation": {"status": "pending", "evidence": ""},
+    "installed_reboot": {"status": "pending", "evidence": ""},
+    "everyday_apps": {"status": "pending", "evidence": ""},
+    "networking": {"status": "pending", "evidence": ""},
+    "audio_and_display": {"status": "pending", "evidence": ""},
+    "security_updates": {"status": "pending", "evidence": ""},
+    "no_embedded_credentials": {"status": "pending", "evidence": ""},
+    "licenses_and_notices": {"status": "pending", "evidence": ""},
+    "physical_hardware": {"status": "pending", "evidence": ""}
+  }
+}
