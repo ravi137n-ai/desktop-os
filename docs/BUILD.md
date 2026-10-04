@@ -55,6 +55,13 @@ If the pinned release disappears, the checksum differs, or the signing key
 changes, stop. Update `project.json` only after checking official signed
 metadata and repeating the build tests. Do not skip verification.
 
+Ctrl+C during an active image download removes the partial file owned by that
+process; rerun the downloader to start fresh. Preexisting partials remain
+untouched. After a crash or forced termination, first confirm no download is
+using the `.iso.part` file, then remove only that stale file before retrying.
+Interrupting host setup does not undo installed packages or PPA entries. Resolve
+any Ubuntu package-manager errors before rerunning the starter.
+
 ## 2. Import the source ISO in Cubic
 
 1. Launch Cubic from the Ubuntu desktop.
@@ -77,10 +84,31 @@ mkdir -p /tmp
 cd /tmp
 ```
 
-Use Cubic's copy button or drag-and-drop to copy the complete `ubuntu-desktop`
-source directory into `/tmp`, then:
+Do not copy the entire source tree: it contains the multi-GB base image in
+`build/` and may contain generated candidates in `dist/`.
+
+In the **build host's ordinary terminal, outside Cubic**, from the source folder:
 
 ```sh
+mkdir -p build
+tar --exclude='.git' --exclude='__pycache__' --exclude='*.py[co]' \
+  --exclude='.pytest_cache' --exclude='.mypy_cache' --exclude='.ruff_cache' \
+  --owner=0 --group=0 --numeric-owner \
+  --transform='s,^,ubuntu-desktop/,' \
+  -czf build/ubuntu-desktop-source.tar.gz \
+  project.json config overlay scripts docs tests README.md NOTICE.md
+```
+
+The explicit input list keeps generated images and candidates out of the
+archive; Git metadata and common Python caches are excluded too. Keep the
+verified base ISO on the host for Cubic's import step.
+
+Use Cubic's copy button or drag-and-drop to copy **only**
+`build/ubuntu-desktop-source.tar.gz` into `/tmp` in the virtual target. On
+Cubic's **Terminal** page:
+
+```sh
+tar -xzf /tmp/ubuntu-desktop-source.tar.gz -C /tmp
 cd /tmp/ubuntu-desktop
 bash scripts/apply-in-cubic.sh --apply-in-cubic
 ```
@@ -99,11 +127,13 @@ test -f /usr/share/doc/desktop-os/welcome.html
 ```
 
 After saving any needed package inventory to the build host, remove only the
-copied source folder from the virtual target before generating the image:
+copied source folder and transfer archive from the virtual target before
+generating the image:
 
 ```sh
 cd /
 rm -rf -- /tmp/ubuntu-desktop
+rm -f -- /tmp/ubuntu-desktop-source.tar.gz
 ```
 
 Do not copy your personal home directory, SSH keys, browser profiles, or
