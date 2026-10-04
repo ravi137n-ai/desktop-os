@@ -23,9 +23,12 @@ if [[ "${ID:-}" != ubuntu || "${VERSION_ID:-}" != 24.04 || "$(dpkg --print-archi
   echo "Refusing: this recipe requires an Ubuntu 24.04 amd64 root filesystem." >&2
   exit 1
 fi
-for tool in python3 apt-get dpkg-query glib-compile-schemas find install; do
+for tool in python3 apt-get dpkg-query glib-compile-schemas find install flock; do
   command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
 done
+install -d -m 0755 /usr/share/desktop-os
+source "$PROJECT/scripts/customization-lock.sh"
+acquire_customization_lock /usr/share/desktop-os/.customization.lock
 python3 "$PROJECT/scripts/check-project.py"
 mapfile -t PACKAGES < <(python3 - "$PROJECT" <<'PY'
 import sys
