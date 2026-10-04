@@ -10,7 +10,7 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-from project_lib import ROOT, KEY_FINGERPRINT, load_config, parse_checksums, sha256, validate_signature_status
+from project_lib import ROOT, KEY_FINGERPRINT, load_config, parse_checksums, rename_no_replace, sha256, validate_signature_status
 
 
 def fetch_small(url: str, destination: Path):
@@ -69,8 +69,10 @@ def main():
     partial = target.with_suffix(".iso.part")
     if partial.exists():
         raise ValueError(f"Incomplete download exists: {partial}. Remove it manually before retrying.")
+    owns_partial = False
     try:
         with urllib.request.urlopen(base["release_url"] + base["filename"], timeout=120) as response, partial.open("xb") as output:
+            owns_partial = True
             size = int(response.headers.get("Content-Length", "0"))
             if not size or size > 12 * 1024**3:
                 raise ValueError("Missing or unreasonable ISO size.")
@@ -86,9 +88,10 @@ def main():
                 raise ValueError("Incomplete ISO download.")
         if sha256(partial) != base["sha256"]:
             raise ValueError("Downloaded ISO failed checksum verification.")
-        partial.rename(target)
+        rename_no_replace(partial, target)
     except Exception:
-        partial.unlink(missing_ok=True)
+        if owns_partial:
+            partial.unlink(missing_ok=True)
         raise
     print(f"Verified image: {target}")
 
