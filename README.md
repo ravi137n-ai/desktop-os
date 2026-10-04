@@ -99,11 +99,32 @@ The downloader verifies the checksum signature against a pinned Ubuntu signing
 key before accepting the pinned base image. It refuses changed metadata,
 checksum mismatches, unsafe filenames, or incomplete previous downloads.
 
+Ctrl+C during an active download cleans up the partial file created by that
+process, allowing a fresh retry. Preexisting partials are never deleted
+automatically. A crash or forced termination can still leave a partial: first
+confirm no download is using it, then remove only that stale `.iso.part` file
+and retry. Interrupting host setup does not undo packages or PPA changes.
+
 Open Cubic, create a project outside this source folder, and import the verified
-base ISO. Keep the original installer and snap seeds. In Cubic's virtual
-terminal, copy this source directory into `/tmp/ubuntu-desktop`, then run:
+base ISO. Keep the original installer and snap seeds. In the build host's normal
+terminal, from this source folder, create a source-only transfer archive:
 
 ```sh
+mkdir -p build
+tar --exclude='.git' --exclude='__pycache__' --exclude='*.py[co]' \
+  --exclude='.pytest_cache' --exclude='.mypy_cache' --exclude='.ruff_cache' \
+  --owner=0 --group=0 --numeric-owner \
+  --transform='s,^,ubuntu-desktop/,' \
+  -czf build/ubuntu-desktop-source.tar.gz \
+  project.json config overlay scripts docs tests README.md NOTICE.md
+```
+
+This explicit input list excludes `build/` and `dist/`, including the multi-GB
+base ISO and any release candidates. Copy **only this archive** into `/tmp`
+using Cubic's copy button. Inside Cubic's virtual terminal, extract it and run:
+
+```sh
+tar -xzf /tmp/ubuntu-desktop-source.tar.gz -C /tmp
 cd /tmp/ubuntu-desktop
 bash scripts/apply-in-cubic.sh --apply-in-cubic
 ```
@@ -112,6 +133,8 @@ bash scripts/apply-in-cubic.sh --apply-in-cubic
 detected Ubuntu chroot and root permissions, and changes that target filesystem.
 The actual ISO assembly is Cubic's interactive wizard, not an automated build
 implemented by this repository. See `docs/BUILD.md` for all steps.
+Before generating the ISO, remove both the copied source directory and the
+transfer archive from the virtual target as described there.
 
 ## Before publishing
 
