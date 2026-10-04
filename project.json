@@ -1,0 +1,18 @@
+{
+  "name": "Desktop OS",
+  "slug": "desktop-os",
+  "version": "0.1.0-dev",
+  "status": "source-setup-only",
+  "base": {
+    "series": "24.04",
+    "codename": "noble",
+    "architecture": "amd64",
+    "release_url": "https://releases.ubuntu.com/24.04/",
+    "filename": "ubuntu-24.04.5.1-desktop-amd64.iso",
+    "sha256": "4da4a0c9035da8e68a59a838674f403f0a54472c78a83b4fb7f78d03588f85a7",
+    "signing_key_fingerprint": "843938DF228D22F7B3742BC0D94AA3F0EFE21092"
+  },
+  "desktop": "Ubuntu GNOME",
+  "build_tool": "Cubic",
+  "hardware_target": "64-bit Intel/AMD PCs; support limited to tested hardware"
+}
