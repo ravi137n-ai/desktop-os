@@ -4,9 +4,25 @@
 
 Do not run host package-management commands in this Replit project.
 Use an Ubuntu desktop computer, not a headless website server. Back up the build
-host and inspect the Cubic PPA before adding it.
+host and inspect the Cubic PPA before adding it. Cubic's official installation
+guide warns that some privileged components may be exploited without a root
+password: prefer an isolated build machine or VM, not an everyday computer.
 
-On that Ubuntu computer, follow Cubic's official installation instructions:
+On the external Ubuntu computer, clone the standalone source repository into a
+folder named `ubuntu-desktop`, or copy `os/ubuntu-desktop/` from this workspace.
+From that source folder, the guarded starter is:
+
+```sh
+python3 scripts/prepare-local-build.py --check
+python3 scripts/prepare-local-build.py --prepare-local-build
+```
+
+It checks the host, requires explicit isolated-host risk confirmation and real
+sudo root access, installs host dependencies, verifies/downloads the base, and
+opens Cubic. Continue at step 2 below; it does not automate the wizard or create
+a custom ISO. No physical disk is formatted by the starter.
+
+Alternatively, on that Ubuntu computer, follow Cubic's official installation instructions:
 
 ```sh
 sudo apt update
