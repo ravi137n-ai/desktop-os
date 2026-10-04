@@ -7,7 +7,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from project_lib import ROOT, load_config, sha256, validate_report
+from project_lib import ROOT, load_config, rename_no_replace, sha256, validate_report
 
 
 def main():
@@ -52,7 +52,7 @@ def main():
         }, indent=2) + "\n")
         shutil.copy2(ROOT / "docs/RELEASE-CHECKLIST.md", stage / "RELEASE-CHECKLIST.md")
         shutil.copy2(ROOT / "NOTICE.md", stage / "NOTICE.md")
-        stage.rename(output)
+        rename_no_replace(stage, output)
     print(f"Local release candidate staged: {output}")
     print("NOT published or digitally signed. Complete distribution/license review and sign release checksums before uploading.")
 
